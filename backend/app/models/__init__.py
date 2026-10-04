@@ -5,6 +5,7 @@ from app.models.question import Question, QuestionType
 from app.models.session import ExamSession, SessionStatus
 from app.models.submission import Submission
 from app.models.violation import ViolationLog, ViolationSeverity
+from app.models.consent import ConsentRecord, DataErasureRequest
 
 __all__ = [
     "Base",
@@ -21,4 +22,6 @@ __all__ = [
     "Submission",
     "ViolationLog",
     "ViolationSeverity",
+    "ConsentRecord",
+    "DataErasureRequest",
 ]

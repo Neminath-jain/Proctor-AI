@@ -42,6 +42,8 @@ export const ExamRoom: React.FC = () => {
   const [fullscreenExits, setFullscreenExits] = useState(0);
   const [isTerminated, setIsTerminated] = useState(false);
   const [terminatedReason, setTerminatedReason] = useState<string | null>(null);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState(false);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
   // Phase 4 Video & Audio Proctoring States
@@ -799,6 +801,33 @@ export const ExamRoom: React.FC = () => {
     }
   };
 
+  // DPDP Section 6: Candidate Consent Withdrawal
+  const handleWithdrawConsent = async () => {
+    setIsSubmittingWithdraw(true);
+    try {
+      if (examId) {
+        await apiClient.post(`/privacy/exams/${examId}/withdraw-consent`);
+      }
+
+      // Immediately halt and release all camera and microphone tracks
+      if (proctorStreamRef.current) {
+        proctorStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      setIsMediaActive(false);
+
+      isSubmittingRef.current = true;
+      setIsTerminated(true);
+      setTerminatedReason(
+        'Proctoring consent was withdrawn by candidate under Section 6 of India\'s DPDP Act 2023. Video, audio, and browser monitoring stopped immediately. Your assessment has been submitted for administrative review.'
+      );
+      setShowWithdrawModal(false);
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Failed to submit consent withdrawal.', 'error');
+    } finally {
+      setIsSubmittingWithdraw(false);
+    }
+  };
+
 
   if (error) {
     return (
@@ -922,6 +951,18 @@ export const ExamRoom: React.FC = () => {
                 <span className="hidden sm:inline">Saving...</span>
               </span>
             )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowWithdrawModal(true)}
+              icon="shield"
+              id="header-withdraw-consent-btn"
+              className="text-xs text-secondary hover:text-rose-700"
+              title="Withdraw Proctoring Consent under DPDP Act 2023"
+            >
+              <span className="hidden md:inline">Withdraw consent</span>
+              <span className="md:hidden">Privacy</span>
+            </Button>
             <Button
               variant="primary"
               size="sm"
@@ -1421,6 +1462,55 @@ export const ExamRoom: React.FC = () => {
               </Button>
               <Button variant="primary" onClick={handleFinalSubmit}>
                 Confirm & Submit
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* DPDP Section 6 Withdraw Consent Modal */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card variant="surface" className="max-w-md w-full text-center border border-outline-variant p-6 md:p-8 space-y-4">
+            <div className="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center text-rose-800 mx-auto">
+              <Icon name="shield" size={28} />
+            </div>
+            <div className="space-y-1">
+              <Badge variant="outline" size="xs">
+                DPDP Section 6 Statutory Right
+              </Badge>
+              <h3 className="text-xl font-bold text-primary">Withdraw Proctoring Consent?</h3>
+            </div>
+            <p className="text-xs text-secondary leading-relaxed">
+              Under Section 6 of India&apos;s Digital Personal Data Protection Act, 2023, you have the right to withdraw your proctoring consent at any time.
+            </p>
+            <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/60 text-left text-xs space-y-1.5 text-secondary">
+              <div className="font-semibold text-primary">Upon confirmation:</div>
+              <ul className="list-disc list-inside space-y-1 text-[11px] leading-relaxed">
+                <li>Webcam, microphone, and browser telemetry stop immediately.</li>
+                <li>Your exam session is terminated and marked as <em>consent_withdrawn</em>.</li>
+                <li>Answers saved so far will be submitted for institutional review.</li>
+              </ul>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
+              <Button
+                variant="secondary"
+                onClick={() => setShowWithdrawModal(false)}
+                disabled={isSubmittingWithdraw}
+                className="text-xs"
+              >
+                Keep Consenting & Continue
+              </Button>
+              <Button
+                variant="primary"
+                id="confirm-withdraw-consent-btn"
+                onClick={handleWithdrawConsent}
+                isLoading={isSubmittingWithdraw}
+                disabled={isSubmittingWithdraw}
+                className="text-xs bg-rose-800 hover:bg-rose-900 border-rose-800 text-white"
+              >
+                Confirm Withdrawal & Exit
               </Button>
             </div>
           </Card>

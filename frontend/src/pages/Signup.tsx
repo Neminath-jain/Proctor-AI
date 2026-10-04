@@ -19,12 +19,24 @@ export const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('candidate');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!ageConfirmed) {
+      setError('You must confirm you are at least 18 years of age. Under Section 9 of the DPDP Act 2023, Proctor AI is strictly scoped for adult candidates.');
+      return;
+    }
+    if (!privacyAgreed) {
+      setError('You must review and agree to the Privacy Policy.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -219,12 +231,41 @@ export const Signup: React.FC = () => {
                 </select>
               </div>
 
+              {/* DPDP Section 9 Age Confirmation & Privacy Agreement */}
+              <div className="space-y-2.5 pt-2 border-t border-outline-variant/50">
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-secondary group">
+                  <input
+                    type="checkbox"
+                    id="signup-age-confirm"
+                    checked={ageConfirmed}
+                    onChange={(e) => setAgeConfirmed(e.target.checked)}
+                    className="mt-0.5 rounded border-outline-variant text-primary focus:ring-primary h-4 w-4 shrink-0 cursor-pointer"
+                  />
+                  <span className="leading-relaxed">
+                    I confirm that I am <strong className="text-primary font-medium">18 years of age or older</strong>. Proctor AI is strictly scoped for adult candidates under DPDP Act 2023 (Section 9).
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-secondary group">
+                  <input
+                    type="checkbox"
+                    id="signup-privacy-confirm"
+                    checked={privacyAgreed}
+                    onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                    className="mt-0.5 rounded border-outline-variant text-primary focus:ring-primary h-4 w-4 shrink-0 cursor-pointer"
+                  />
+                  <span className="leading-relaxed">
+                    I have read and agree to the <Link to="/privacy" target="_blank" className="text-primary font-medium underline">Privacy Policy & DPDP Notice</Link>, and acknowledge the 90-day evidence retention schedule.
+                  </span>
+                </label>
+              </div>
+
               <div className="pt-2">
                 <Button
                   type="submit"
                   variant="primary"
                   id="submit-signup-btn"
-                  disabled={isSubmitting}
+                  disabled={!ageConfirmed || !privacyAgreed || isSubmitting}
                   isLoading={isSubmitting}
                   className="w-full text-xs font-medium shadow-subtle"
                   icon="arrow_forward"

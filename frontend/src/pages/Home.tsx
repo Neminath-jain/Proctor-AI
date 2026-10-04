@@ -480,6 +480,12 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-5">
+          <Link to="/about" className="hover:text-primary transition-colors">
+            About
+          </Link>
+          <Link to="/privacy" className="hover:text-primary transition-colors">
+            Privacy Policy
+          </Link>
           <Link to="/login" className="hover:text-primary transition-colors">
             Sign in
           </Link>
@@ -487,7 +493,7 @@ export const Home: React.FC = () => {
             Create account
           </Link>
           <a
-            href="mailto:support@proctorai.edu"
+            href="mailto:grievance@proctorai.edu"
             className="hover:text-primary transition-colors flex items-center gap-1"
           >
             <span>Support</span>

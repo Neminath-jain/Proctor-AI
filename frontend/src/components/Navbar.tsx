@@ -242,6 +242,16 @@ export const Navbar: React.FC = () => {
                       <span>Help & Support</span>
                     </Link>
 
+                    {/* Privacy Policy */}
+                    <Link
+                      to="/privacy"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-primary hover:bg-surface-container transition-colors"
+                    >
+                      <Icon name="shield" size={16} className="text-secondary" />
+                      <span>Privacy Policy (DPDP)</span>
+                    </Link>
+
                     <div className="border-t border-outline-variant/50 pt-1">
                       <button
                         type="button"
@@ -382,6 +392,19 @@ export const Navbar: React.FC = () => {
                   <Icon name="settings" size={18} />
                   Settings
                 </Link>
+
+                <Link
+                  to="/privacy"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`p-2.5 rounded-xl text-sm font-medium flex items-center gap-2.5 transition-colors ${
+                    isActiveLink('/privacy')
+                      ? 'bg-surface-container-high text-primary font-bold'
+                      : 'text-on-surface-variant hover:bg-surface-container'
+                  }`}
+                >
+                  <Icon name="shield" size={18} />
+                  Privacy Policy
+                </Link>
               </div>
 
               <div className="pt-2 border-t border-outline-variant/60">
@@ -405,6 +428,14 @@ export const Navbar: React.FC = () => {
               >
                 <Icon name="info" size={18} />
                 About
+              </Link>
+              <Link
+                to="/privacy"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2.5 rounded-xl text-sm font-medium text-primary hover:bg-surface-container flex items-center gap-2"
+              >
+                <Icon name="shield" size={18} />
+                Privacy Policy
               </Link>
               <div className="pt-2 border-t border-outline-variant/60 flex flex-col gap-2">
                 <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>

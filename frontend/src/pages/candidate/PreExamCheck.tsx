@@ -10,6 +10,15 @@ export const PreExamCheck: React.FC = () => {
 
   const [exam, setExam] = useState<CandidateAvailableExam | null>(null);
   const [isLoadingExam, setIsLoadingExam] = useState(true);
+
+  // DPDP Consent Flow States
+  const [consentStage, setConsentStage] = useState<'notice' | 'granted' | 'declined'>('notice');
+  const [consentNoticeRead, setConsentNoticeRead] = useState(false);
+  const [consentBiometricsAgreed, setConsentBiometricsAgreed] = useState(false);
+  const [isSubmittingConsent, setIsSubmittingConsent] = useState(false);
+  const [consentAuditId, setConsentAuditId] = useState<string | null>(null);
+
+  // Hardware Calibration States
   const [cameraStatus, setCameraStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [micStatus, setMicStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [audioLevel, setAudioLevel] = useState<number>(0);
@@ -72,6 +81,52 @@ export const PreExamCheck: React.FC = () => {
     };
   }, []);
 
+  // 2. DPDP Consent Handlers
+  const handleGrantConsent = async () => {
+    if (!examId) return;
+    setIsSubmittingConsent(true);
+    setErrorMessage(null);
+    try {
+      const { data } = await apiClient.post(`/privacy/exams/${examId}/consent`, {
+        status: 'granted',
+        clauses_consented: [
+          'periodic_camera_snapshots',
+          'audio_anomaly_chunks',
+          'facial_biometrics_reference',
+          'browser_integrity_telemetry',
+        ],
+        notice_version: '2023.1-dpdp',
+      });
+      setConsentAuditId(data.consent_id || null);
+      setConsentStage('granted');
+      // Automatically request hardware permissions once consent is recorded
+      requestPermissions();
+    } catch (err: any) {
+      setErrorMessage(err.response?.data?.detail || 'Failed to record DPDP consent record.');
+    } finally {
+      setIsSubmittingConsent(false);
+    }
+  };
+
+  const handleDeclineConsent = async () => {
+    if (!examId) return;
+    setIsSubmittingConsent(true);
+    setErrorMessage(null);
+    try {
+      await apiClient.post(`/privacy/exams/${examId}/consent`, {
+        status: 'declined',
+        clauses_consented: [],
+        notice_version: '2023.1-dpdp',
+      });
+      setConsentStage('declined');
+    } catch (err: any) {
+      setConsentStage('declined');
+    } finally {
+      setIsSubmittingConsent(false);
+    }
+  };
+
+  // 3. Media permissions request
   const requestPermissions = async () => {
     setCameraStatus('requesting');
     setMicStatus('requesting');
@@ -132,7 +187,6 @@ export const PreExamCheck: React.FC = () => {
             sum += dataArray[i];
           }
           const average = sum / dataArray.length;
-          // Scale roughly from 0 to 100
           setAudioLevel(Math.min(100, Math.round((average / 128) * 100)));
           animFrameRef.current = requestAnimationFrame(updateAudio);
         };
@@ -221,11 +275,263 @@ export const PreExamCheck: React.FC = () => {
         <span className="animate-spin">
           <Icon name="progress_activity" size={32} />
         </span>
-        <p className="text-sm">Loading proctoring environment...</p>
+        <p className="text-sm">Loading examination environment...</p>
       </div>
     );
   }
 
+  // -------------------------------------------------------------
+  // VIEW 1: DPDP Act 2023 Explicit Consent Screen (Pre-Hardware)
+  // -------------------------------------------------------------
+  if (consentStage === 'notice') {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6 py-4">
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center gap-2 pb-2 border-b border-outline-variant/60">
+          <Link
+            to="/exams"
+            className="text-xs text-secondary hover:text-primary transition-colors inline-flex items-center gap-1"
+          >
+            <Icon name="arrow_back" size={14} />
+            <span>Back to assessments</span>
+          </Link>
+          <span className="text-outline-variant text-xs">/</span>
+          <span className="text-xs text-secondary">DPDP Consent</span>
+        </div>
+
+        {errorMessage && (
+          <Alert variant="error" onClose={() => setErrorMessage(null)}>
+            {errorMessage}
+          </Alert>
+        )}
+
+        <div className="border border-outline-variant/70 bg-surface-container-lowest rounded-2xl p-6 sm:p-8 space-y-6 shadow-subtle">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" size="xs" icon="gavel">
+                DPDP Act 2023 Notice
+              </Badge>
+              <span className="text-xs text-secondary">•</span>
+              <span className="text-xs text-secondary font-medium">Data Fiduciary: Proctor AI</span>
+              {exam && (
+                <Badge variant="neutral" size="xs">
+                  {exam.title}
+                </Badge>
+              )}
+            </div>
+
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-primary">
+              Examination Proctoring Consent & Notice
+            </h1>
+            <p className="text-xs sm:text-sm text-secondary leading-relaxed">
+              Under Section 6 of India&apos;s <strong>Digital Personal Data Protection Act, 2023 (DPDP Act 2023)</strong>, Proctor AI must obtain your freely given, specific, informed, and unambiguous consent before accessing your hardware or processing proctoring data.
+            </p>
+          </div>
+
+          {/* Transparent Disclosures Grid */}
+          <div className="space-y-3 pt-1">
+            <div className="text-xs font-semibold text-primary">Data that will be processed during this examination:</div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/20 space-y-1">
+                <div className="font-semibold text-primary flex items-center gap-1.5">
+                  <Icon name="videocam" size={15} />
+                  <span>Periodic Camera Snapshots</span>
+                </div>
+                <p className="text-secondary leading-relaxed text-[11px]">
+                  Discrete low-resolution photos taken every 10–15 seconds to verify presence. <em>We do not record continuous 24/7 video streams.</em>
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/20 space-y-1">
+                <div className="font-semibold text-primary flex items-center gap-1.5">
+                  <Icon name="face" size={15} />
+                  <span>Biometric Face-Match Embedding</span>
+                </div>
+                <p className="text-secondary leading-relaxed text-[11px]">
+                  A 128-dimensional numerical vector extracted from your baseline photo to verify identity against periodic snapshots in-memory.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/20 space-y-1">
+                <div className="font-semibold text-primary flex items-center gap-1.5">
+                  <Icon name="mic" size={15} />
+                  <span>Audio Anomaly Chunks</span>
+                </div>
+                <p className="text-secondary leading-relaxed text-[11px]">
+                  Short micro-buffers analyzed locally; audio chunks are saved only when anomalies (voice murmurs, secondary speakers) are detected.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-outline-variant/60 bg-surface-container-low/20 space-y-1">
+                <div className="font-semibold text-primary flex items-center gap-1.5">
+                  <Icon name="tab" size={15} />
+                  <span>Browser Telemetry</span>
+                </div>
+                <p className="text-secondary leading-relaxed text-[11px]">
+                  Fullscreen exits, tab switches, and window blur events are logged to maintain test integrity. No external tabs or files are accessed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Compliance & Rights Summary Card */}
+          <div className="p-4 rounded-xl border border-outline-variant/60 bg-surface-container-low/40 space-y-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+              <div>
+                <span className="font-semibold text-primary block">Purpose:</span>
+                <span className="text-secondary">Identity verification & integrity auditing</span>
+              </div>
+              <div>
+                <span className="font-semibold text-primary block">Retention Period:</span>
+                <span className="text-secondary">Strictly 90 days (AWS ap-south-1 Mumbai)</span>
+              </div>
+              <div>
+                <span className="font-semibold text-primary block">Access Scope:</span>
+                <span className="text-secondary">Authorized exam administrators only</span>
+              </div>
+            </div>
+            <div className="pt-1 text-[11px] text-secondary border-t border-outline-variant/40">
+              Your data is <strong>never</strong> sold, shared with advertisers, or used for automated marketing. You have the statutory right to withdraw consent mid-exam at any time.
+            </div>
+          </div>
+
+          {/* Un-prechecked Consent Checkboxes */}
+          <div className="space-y-3 pt-2 border-t border-outline-variant/60">
+            <label className="flex items-start gap-3 cursor-pointer text-xs text-secondary group">
+              <input
+                type="checkbox"
+                id="consent-check-policy"
+                checked={consentNoticeRead}
+                onChange={(e) => setConsentNoticeRead(e.target.checked)}
+                className="mt-0.5 rounded border-outline-variant text-primary focus:ring-primary h-4 w-4 shrink-0 cursor-pointer"
+              />
+              <span className="leading-relaxed">
+                I have reviewed the data collection notice and the <Link to="/privacy" target="_blank" className="text-primary font-medium underline">Proctor AI Privacy Policy</Link>, and acknowledge the 90-day retention and deletion policy.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer text-xs text-secondary group">
+              <input
+                type="checkbox"
+                id="consent-check-biometrics"
+                checked={consentBiometricsAgreed}
+                onChange={(e) => setConsentBiometricsAgreed(e.target.checked)}
+                className="mt-0.5 rounded border-outline-variant text-primary focus:ring-primary h-4 w-4 shrink-0 cursor-pointer"
+              />
+              <span className="leading-relaxed">
+                I provide <strong className="text-primary font-medium">explicit and voluntary consent</strong> under Section 6 of the DPDP Act 2023 for periodic camera snapshot capture, audio monitoring, and biometric facial comparison for the sole purpose of invigilating this examination.
+              </span>
+            </label>
+          </div>
+
+          {/* Actions */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+            <Button
+              variant="primary"
+              size="md"
+              id="grant-dpdp-consent-btn"
+              disabled={!consentNoticeRead || !consentBiometricsAgreed || isSubmittingConsent}
+              isLoading={isSubmittingConsent}
+              onClick={handleGrantConsent}
+              icon="verified_user"
+              className="w-full sm:w-auto text-xs font-medium shadow-subtle"
+            >
+              I Consent & Proceed to Hardware Check
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="md"
+              id="decline-dpdp-consent-btn"
+              disabled={isSubmittingConsent}
+              onClick={handleDeclineConsent}
+              className="w-full sm:w-auto text-xs"
+            >
+              Decline Consent
+            </Button>
+
+            <Link to="/privacy" className="text-xs text-secondary hover:text-primary sm:ml-auto">
+              Learn about DPDP Act 2023 &rarr;
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // VIEW 2: DPDP Consent Declined Screen (Clear, Respectful Notice)
+  // -------------------------------------------------------------
+  if (consentStage === 'declined') {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 py-8">
+        <div className="border border-outline-variant/70 bg-surface-container-lowest rounded-2xl p-6 sm:p-8 space-y-6 shadow-subtle text-center">
+          <div className="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center text-primary mx-auto">
+            <Icon name="shield" size={28} />
+          </div>
+
+          <div className="space-y-2">
+            <Badge variant="outline" size="xs">
+              DPDP Section 6 Choice Respected
+            </Badge>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-primary">
+              Proctoring Consent Declined
+            </h1>
+            <p className="text-xs sm:text-sm text-secondary leading-relaxed max-w-lg mx-auto">
+              Under India&apos;s Digital Personal Data Protection Act, 2023, data collection cannot occur without your voluntary consent. Because this online examination requires automated identity verification and integrity monitoring, candidates who decline consent cannot enter the digital exam room.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-outline-variant/60 bg-surface-container-low/40 text-xs text-secondary text-left space-y-2">
+            <div className="font-semibold text-primary">What you can do next:</div>
+            <ul className="list-disc list-inside space-y-1 text-[11px] leading-relaxed">
+              <li>If you declined accidentally, you may reconsider and review the consent terms again.</li>
+              <li>If you have privacy concerns or require offline accommodation, contact your course administrator.</li>
+              <li>No proctoring data, camera snapshots, or audio files were collected from your device.</li>
+            </ul>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button
+              variant="primary"
+              size="sm"
+              icon="replay"
+              onClick={() => {
+                setConsentNoticeRead(false);
+                setConsentBiometricsAgreed(false);
+                setConsentStage('notice');
+              }}
+              className="w-full sm:w-auto text-xs"
+            >
+              Review & Reconsider Consent
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon="arrow_back"
+              onClick={() => navigate('/exams')}
+              className="w-full sm:w-auto text-xs"
+            >
+              Return to Assessments List
+            </Button>
+          </div>
+
+          <div className="pt-2 text-xs text-secondary">
+            Have questions? Contact our Grievance Officer at{' '}
+            <a href="mailto:grievance@proctorai.edu" className="text-primary underline">
+              grievance@proctorai.edu
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // VIEW 3: Hardware Calibration & Baseline Photo (Consent Granted)
+  // -------------------------------------------------------------
   return (
     <div className="max-w-4xl mx-auto space-y-6 py-4">
       {/* Hardware Calibration Console Header */}
@@ -249,13 +555,29 @@ export const PreExamCheck: React.FC = () => {
           </h1>
         </div>
 
-        {exam && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {consentAuditId && (
+            <Badge variant="success" size="xs" icon="check_circle">
+              DPDP Consent Verified
+            </Badge>
+          )}
+          {exam && (
             <Badge variant="neutral" size="xs" rounded="md" icon="assignment">
               {exam.title}
             </Badge>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
+
+      {/* DPDP Compliance Micro-Banner */}
+      <div className="p-3 rounded-xl border border-outline-variant/60 bg-surface-container-low/40 flex items-center justify-between text-xs text-secondary">
+        <div className="flex items-center gap-2">
+          <Icon name="verified_user" size={15} className="text-primary shrink-0" />
+          <span>DPDP Consent active: 90-day retention schedule enforced. You may withdraw consent at any time during the exam.</span>
+        </div>
+        <Link to="/privacy" className="text-primary underline hover:text-primary/80 shrink-0 hidden sm:inline">
+          View Policy
+        </Link>
       </div>
 
       {errorMessage && (

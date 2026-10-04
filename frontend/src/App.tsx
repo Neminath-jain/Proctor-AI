@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { About } from './pages/About';
 import { Help } from './pages/Help';
 import { Settings } from './pages/Settings';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
 
 // Candidate Assessment Flow
 import { ExamList } from './pages/candidate/ExamList';
@@ -36,6 +37,7 @@ export const App: React.FC = () => {
               {/* Public Pages */}
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
 
               {/* Authenticated Dashboard */}
               <Route
