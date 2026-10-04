@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-sans antialiased min-h-screen selection:bg-surface-container-highest selection:text-primary;
+  }
+}
+
+/* Material Symbols Outlined Icon Styling */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  vertical-align: middle;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle Fog-Gradient for Hero/Summary panels */
+.fog-gradient-hero {
+  background-color: #fdf8f8;
+  background-image: 
+    radial-gradient(ellipse 60% 50% at 30% 0%, rgba(225, 223, 223, 0.55) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 90%, rgba(229, 226, 225, 0.45) 0%, transparent 70%);
+}
+
+/* Faint subtle dot-grid texture for hero */
+.hero-dot-grid {
+  background-image: radial-gradient(rgba(24, 24, 27, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, black 30%, transparent 75%);
+}
+
+.hero-radial-glow {
+  background-image: radial-gradient(circle at 50% 10%, rgba(24, 24, 27, 0.035) 0%, transparent 60%);
+}
+
+.fog-gradient-card {
+  background-color: #f7f3f2;
+  background-image: 
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(225, 223, 223, 0.6) 0%, transparent 80%),
+    radial-gradient(ellipse 50% 40% at 90% 100%, rgba(241, 237, 236, 0.5) 0%, transparent 70%);
+}
+
+/* Custom scrollbars matching monochrome theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1edec;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4c7c7;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #747878;
+}
+
+/* ==========================================================================
+   Bloomberg Terminal meets Linear: Data Density & Telemetry Motif
+   ========================================================================== */
+
+/* Tabular Numerals for Bloomberg-Style Alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Signature Visual Motif: Real-Time Telemetry Pulse Beacon */
+.telemetry-beacon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8px !important;
+  height: 8px !important;
+  min-width: 8px !important;
+  min-height: 8px !important;
+  max-width: 8px !important;
+  max-height: 8px !important;
+  flex-shrink: 0 !important;
+  border-radius: 9999px !important;
+  background-color: #047857; /* high contrast emerald-700 */
+  vertical-align: middle;
+}
+
+.telemetry-beacon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background-color: rgba(4, 120, 87, 0.35);
+  animation: beacon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+
+.telemetry-beacon-critical {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8px !important;
+  height: 8px !important;
+  min-width: 8px !important;
+  min-height: 8px !important;
+  max-width: 8px !important;
+  max-height: 8px !important;
+  flex-shrink: 0 !important;
+  border-radius: 9999px !important;
+  background-color: #be123c; /* high contrast rose-700 */
+  vertical-align: middle;
+}
+
+.telemetry-beacon-critical::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background-color: rgba(190, 18, 60, 0.35);
+  animation: beacon-pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes beacon-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Signature Visual Motif: Subtle Camera / Stream Scan Line */
+.telemetry-scan-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.telemetry-scan-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.7) 50%, transparent 100%);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+  z-index: 15;
+  pointer-events: none;
+  animation: telemetry-scan 4s linear infinite;
+}
+
+@keyframes telemetry-scan {
+  0% {
+    top: -5%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 105%;
+    opacity: 0;
+  }
+}
+
+/* Purposeful Motion: Incoming Violation Row Slide & Fade */
+@keyframes row-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-row-slide {
+  animation: row-slide-in 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Linear-style Crisp 1px Borders */
+.border-subtle {
+  border-color: rgba(196, 199, 199, 0.5);
+}

@@ -1,0 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+backend/.venv/
+ml-service/venv/
+ml-service/.venv/
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+frontend/node_modules/
+frontend/dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.env
+backend/.env
+frontend/.env
+ml-service/.env
+
+# Databases & logs
+*.sqlite3
+*.db
+*.log
+*.pid
+logs/
+backend/exam_proctoring.db
+
+# Local storage & evidence captures
+storage/
+backend/storage/evidence/
+backend/storage/backups/
+
+# Docker volumes / mounts
+postgres_data/
+redis_data/
+judge0_data/
+
+# IDEs & editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage & cache
+.coverage
+htmlcov/
+.pytest_cache/

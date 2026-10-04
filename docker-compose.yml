@@ -1,0 +1,203 @@
+services:
+  # ============================================================================
+  # 1. Primary PostgreSQL Database (Exam Platform & RBAC)
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: proctor_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
+      POSTGRES_DB: ${POSTGRES_DB:-exam_proctoring_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-exam_proctoring_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - proctor_net
+
+  # ============================================================================
+  # 2. Redis Cache & Session Store
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: proctor_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - proctor_net
+
+  # ============================================================================
+  # 3. Dedicated PostgreSQL for Judge0 Code Execution Engine
+  # ============================================================================
+  judge0-db:
+    image: postgres:13-alpine
+    container_name: proctor_judge0_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${JUDGE0_DB_USER:-judge0}
+      POSTGRES_PASSWORD: ${JUDGE0_DB_PASSWORD:-judge0_db_password}
+      POSTGRES_DB: ${JUDGE0_DB_NAME:-judge0}
+    volumes:
+      - judge0_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${JUDGE0_DB_USER:-judge0} -d ${JUDGE0_DB_NAME:-judge0}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - proctor_net
+
+  # ============================================================================
+  # 4. Judge0 CE API Server
+  # ============================================================================
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    container_name: proctor_judge0_server
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - ./docker/judge0.conf:/judge0.conf:ro
+    ports:
+      - "${JUDGE0_PORT:-2358}:2358"
+    environment:
+      POSTGRES_HOST: judge0-db
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - proctor_net
+
+  # ============================================================================
+  # 5. Judge0 CE Submission Worker
+  # ============================================================================
+  judge0-workers:
+    image: judge0/judge0:1.13.1
+    container_name: proctor_judge0_workers
+    restart: unless-stopped
+    privileged: true
+    command: ["./scripts/workers"]
+    volumes:
+      - ./docker/judge0.conf:/judge0.conf:ro
+    environment:
+      POSTGRES_HOST: judge0-db
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      judge0-server:
+        condition: service_started
+    networks:
+      - proctor_net
+
+  # ============================================================================
+  # 6. Backend API (FastAPI)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: proctor_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      REDIS_URL: redis://redis:6379/0
+      ML_SERVICE_URL: http://ml-service:8001
+      JUDGE0_API_URL: http://judge0-server:2358
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health/live || curl -f http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - proctor_net
+
+  # ============================================================================
+  # 7. ML Proctoring Service (Python Skeleton)
+  # ============================================================================
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: proctor_ml_service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ml-service:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - proctor_net
+
+  # ============================================================================
+  # 8. Frontend Web Client (React + TS + Vite)
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: proctor_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+      - VITE_ML_SERVICE_URL=http://localhost:8001
+      - VITE_JUDGE0_API_URL=http://localhost:2358
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - proctor_net
+
+networks:
+  proctor_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  judge0_db_data:

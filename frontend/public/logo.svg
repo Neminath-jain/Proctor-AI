@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 40" width="180" height="40">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+  </defs>
+  <!-- Shield Icon -->
+  <g transform="translate(4, 4) scale(0.66)">
+    <path d="M24 4L8 10v12c0 10.6 6.8 20.5 16 23 9.2-2.5 16-12.4 16-23V10L24 4z" fill="url(#logoGrad)" />
+    <path d="M21 28.5l-6-6 2.8-2.8 3.2 3.2 9.2-9.2 2.8 2.8-12 12z" fill="#ffffff" />
+  </g>
+  <!-- Text Label -->
+  <text x="44" y="26" font-family="Inter, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#1e1b4b" letter-spacing="-0.5">
+    Proctor<tspan font-weight="400" fill="#6366f1">AI</tspan>
+  </text>
+</svg>

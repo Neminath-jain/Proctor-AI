@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+    <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e0e7ff" />
+    </linearGradient>
+  </defs>
+  <!-- Shield Base -->
+  <path d="M24 4L8 10v12c0 10.6 6.8 20.5 16 23 9.2-2.5 16-12.4 16-23V10L24 4z" fill="url(#shieldGrad)" />
+  <!-- Inner Protection Ring -->
+  <path d="M24 8L12 12.5v9.5c0 8.5 5.1 16.4 12 18.4 6.9-2 12-9.9 12-18.4V12.5L24 8z" fill="#3730a3" opacity="0.35" />
+  <!-- Verified Checkmark -->
+  <path d="M21 28.5l-6-6 2.8-2.8 3.2 3.2 9.2-9.2 2.8 2.8-12 12z" fill="url(#checkGrad)" />
+</svg>
